@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "commonjs",
-    "outDir": "/script"
+    "module": "es6",
+    "target": "es6",
+    "outDir": "../script",
+    "sourceMap": true,
+    "lib": [ "es2015", "dom" ]
   }
 }
