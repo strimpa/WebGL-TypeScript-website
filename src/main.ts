@@ -1,11 +1,16 @@
 import * as THREE from "three";
 import { WebGL } from './WebGL.js';
 import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer';
-import { BufferGeometry } from "three";
-import { ExplodableBox } from "./geometry/ExplodableBox.js"
+import { BufferGeometry, Vector2, Vector3 } from "three";
 import { Tracer } from "./Tracer.js"
+import { PortfolioScene } from "./PortfolioScene.js";
+import { ContentManager as CtntMgr } from "./ContentManager.js";
 
 let canvas : HTMLElement = document.getElementById( 'table_outside' );
+declare global
+{ 
+    var app : App;
+}
 
 if ( WebGL.isWebGLAvailable() == false) 
 {
@@ -13,84 +18,69 @@ if ( WebGL.isWebGLAvailable() == false)
 	canvas.appendChild( warning );
 }
 
-const contentWidth = 800;
-const contentHeight = 1000;
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, contentWidth / contentHeight, 0.1, 1000 );
-camera.position.z = 5;
-
-let rotating = true;
-
-const geomRenderer = new THREE.WebGLRenderer();
-geomRenderer.setSize( contentWidth, contentHeight );
-canvas.appendChild( geomRenderer.domElement );
-
-let ambient = new THREE.AmbientLight( 0x111111 );
-scene.add( ambient );
-
-scene.fog = new THREE.Fog( 0x050505, 2000, 3500 );
-
-const light1 = new THREE.DirectionalLight( 0x00FF00, 0.5 );
-light1.position.set( 1, 1, 1 );
-scene.add( light1 );
-
-const box = new ExplodableBox();
-scene.add( box );
-// box.position.z = -15;
-
-//Load background texture
-const loader = new THREE.TextureLoader();
-loader.load('/media/bg.jpg' , function(texture)
-            {
-             scene.background = texture;
-             texture.wrapS = THREE.MirroredRepeatWrapping;
-             texture.wrapT = THREE.MirroredRepeatWrapping;
-            // texture.repeat = new THREE.Vector2( .5, .5 ); 
-            });
-
-
-let tracer = new Tracer(contentWidth, contentHeight);
-
-function update()
+class App
 {
-    requestAnimationFrame( update );
+    contentWidth = 800;
+    contentHeight = 1000;
+    camera = new THREE.PerspectiveCamera( 75, this.contentWidth / this.contentHeight, 0.1, 1000 );
+    geomRenderer = new THREE.WebGLRenderer();
+    scene = new PortfolioScene();
+    tracer = new Tracer(this.contentWidth, this.contentHeight);
+    middleX = this.contentWidth/2 + 150;
+    middleY = this.contentHeight/2;
+    cntntMgr = new CtntMgr();
 
-    if (rotating)
+    init() : void
     {
-        box.rotation.x += 0.01;
-        box.rotation.y += 0.01;
+        this.camera.position.z = 35;
+
+        this.scene.init();
+
+        this.geomRenderer.setSize( this.contentWidth, this.contentHeight );
+        canvas.appendChild( this.geomRenderer.domElement );
+
+        this.cntntMgr.load();
+        
+        // import { OrbitControls } from 'OrbitControls';
+        // const controls = new OrbitControls( camera, renderer.domElement );
+        canvas.addEventListener( 'mousemove', (event) => this.mouseMoveHandler(event), false );
+        canvas.addEventListener( 'mousedown', (event) => this.mouseDownHandler(event), false );
+        window.addEventListener( 'resize', (event) => this.resizeHandler(event), false );
     }
 
-    rotating = tracer.update(camera, [box]);
+    update() : void
+    {
+        let nothingHit = this.tracer.update(this.camera, this.scene.objects);
+        this.scene.setRotating(nothingHit);
+        this.scene.update();
 
-    box.UpdateBuffers();
+        this.geomRenderer.render(this.scene, this.camera );
 
-    geomRenderer.render(scene, camera );
-};
+        requestAnimationFrame( () => this.update() );
+    };
 
-function resize()
-{
-    geomRenderer.render(scene, camera );
+    resizeHandler( event) : void
+    {
+        this.geomRenderer.render(this.scene, this.camera );
+    }
+
+    mouseDownHandler(event) : void
+    {
+        this.tracer.onDocumentMouseDown (event);
+    }
+
+    mouseMoveHandler (event) : void
+    {
+        this.tracer.onDocumentMouseMove( event );
+        this.scene.setLightPos(
+            new Vector3(
+                (event.clientX - this.middleX) / this.contentWidth * 10,
+                - (event.clientY - this.middleY) / this.contentHeight * 10,
+                0.0
+            ));
+    }
 }
 
-function mouseDownHandler(event)
-{
-    tracer.onDocumentMouseDown (event);
-}
-const middleX = contentWidth/2 + 150
-const middleY = contentHeight/2
-function mouseMoveHandler (event)
-{
-    tracer.onDocumentMouseMove( event );
-    light1.position.x = (event.clientX - middleX) / contentWidth * 10;
-    light1.position.y = - (event.clientY - middleY) / contentHeight * 10;
-}
-
-window.onresize = resize;
-
-// import { OrbitControls } from 'OrbitControls';
-// const controls = new OrbitControls( camera, renderer.domElement );
-canvas.addEventListener( 'mousemove', (event) => mouseMoveHandler(event), false );
-canvas.addEventListener( 'mousedown', (event) => mouseDownHandler(event), false );
-
-update();
+globalThis.app = new App();
+globalThis.app.init();
+globalThis.app.update();

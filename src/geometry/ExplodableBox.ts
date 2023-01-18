@@ -1,11 +1,11 @@
 import * as THREE from "three"
-import { IClickable } from "IClickable"
+import { IClickable } from "../IClickable.js"
 
 export class ExplodableBox extends THREE.Mesh implements IClickable
 {
     #region
     private explodeCounter : number = 0.0;
-    private hovered = false;
+    private exploded = false;
     private outline : THREE.LineSegments;
     private readonly expandSteps = 10;
     private edges : THREE.EdgesGeometry;
@@ -125,31 +125,23 @@ export class ExplodableBox extends THREE.Mesh implements IClickable
         ]);     
     #endregion
 
+    isExplodableBox () :boolean
+    {
+        return "Hover" in this && "Click" in this && "UpdateBuffers" in this;
+    }
+
     Hover() : void
     {
-        // reset after each frame process
-        this.hovered = true;
     }
 
     Click() : void
     {
-
+        this.exploded = !this.exploded;
+        globalThis.app.scene.FocusOnObject(this);
     }
 
-    UpdateBuffers() : void
+    private UpdateBuffers() : void
     {
-        if (this.hovered)
-        {
-            if (this.explodeCounter < this.expandSteps)
-                this.explodeCounter++;
-        }
-        else
-        {
-            if (this.explodeCounter > 0)
-                this.explodeCounter--;
-        }
-        this.hovered = false;
-
         let newVertices = new Float32Array(this.vertices.length);
         let counter : number = 0; 
         this.vertices.forEach(element => {
@@ -174,6 +166,38 @@ export class ExplodableBox extends THREE.Mesh implements IClickable
         this.geometry.computeVertexNormals();
     }
 
+    private UpdatePosition() : void
+    {
+
+    }
+
+    Update() : void
+    {
+        let dirty : boolean = false;
+        if (this.exploded)
+        {
+            if (this.explodeCounter < this.expandSteps)
+            {
+                this.explodeCounter++;
+                dirty = true;
+            }
+        }
+        else
+        {
+            if (this.explodeCounter > 0)
+            {
+                this.explodeCounter--;
+                dirty = true;
+            }
+        }
+
+        if (dirty)
+        {
+            this.UpdateBuffers();
+            this.UpdatePosition();
+        }
+    }
+
 
     /**
      * standard cstor
@@ -182,7 +206,7 @@ export class ExplodableBox extends THREE.Mesh implements IClickable
     {
         let geometry = new THREE.BufferGeometry();
         let material = new THREE.MeshPhongMaterial({
-            color: 0x556655,
+            color: 0x555955,
             specular: 0xFFFFFF,
             opacity: 0.8,
             transparent: true,
@@ -199,7 +223,7 @@ export class ExplodableBox extends THREE.Mesh implements IClickable
 
         this.material = material;
 
-        let linematerial = new THREE.LineBasicMaterial( { color: 0xAABBAA, transparent: true } );
+        let linematerial = new THREE.LineBasicMaterial( { color: 0x666966, transparent: true } );
         this.outline = new THREE.LineSegments( this.edges, linematerial );
         this.add( this.outline );
     }

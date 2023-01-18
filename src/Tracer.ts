@@ -1,6 +1,5 @@
 import * as THREE from "three"
-import { IClickable } from "IClickable"
-import { ExplodableBox } from "geometry/ExplodableBox"
+import { ExplodableBox } from "./geometry/ExplodableBox"
 
 /**
  * Logic about scene ray casting
@@ -39,24 +38,40 @@ export class Tracer
 
     update(camera, objects : ExplodableBox[]) : boolean
     {
-        // find intersections
-        this.raycaster.setFromCamera( this.mouse, camera );
-
-        var intersects = this.raycaster.intersectObjects( objects, false );
-        intersects.forEach(element => 
+        let scene = globalThis.app.scene;
+        let somethingWasHit = false;
+        if (scene.IsFocusing())
         {
-            if (this.mouseWasDown && 'Click' in element.object)
+            if (this.mouseWasDown)
             {
-                (element.object as ExplodableBox).Hover();
+                (scene.GetFocusObj() as ExplodableBox).Click();
+                somethingWasHit = true;
             }
-            else if ('Hover' in element.object)
+        }
+        else
+        {
+            // find intersections
+            this.raycaster.setFromCamera( this.mouse, camera );
+
+            var intersects = this.raycaster.intersectObjects( objects, false );
+            if (intersects.length > 0)
             {
-                (element.object as ExplodableBox).Hover();
+                let FirstHit = intersects[0].object;
+                if (this.mouseWasDown && 'Click' in FirstHit)
+                {
+                    (FirstHit as ExplodableBox).Click();
+                }
+                else if ('Hover' in FirstHit)
+                {
+                    (FirstHit as ExplodableBox).Hover();
+                }
+
+                somethingWasHit = true;
             }
-        });
+        }
 
         this.mouseWasDown = false;
 
-        return intersects.length == 0;
+        return somethingWasHit == false;
     }
 }
