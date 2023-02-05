@@ -120,6 +120,9 @@ export class PortfolioScene extends THREE.Scene
             let currentMatrix = obj.matrixWorld.clone();
             this.focusRoot.add(obj);
             obj.matrix = currentMatrix;
+//            obj.matrixAutoUpdate = true;
+//            obj.position.setFromMatrixPosition(currentMatrix);
+//            obj.rotation.setFromRotationMatrix(currentMatrix);
         }
     }
 

@@ -1,4 +1,5 @@
 import * as THREE from "three"
+import { Vector3 } from "three";
 import { IClickable } from "../IClickable.js"
 
 export class ExplodableBox extends THREE.Mesh implements IClickable
@@ -123,6 +124,9 @@ export class ExplodableBox extends THREE.Mesh implements IClickable
             0.0, 1.0, 0.0,
             0.0, 1.0, 0.0,
         ]);     
+
+    private readonly focusPos = new THREE.Vector3(0,0,-20);
+    private clickPos = new Vector3();
     #endregion
 
     isExplodableBox () :boolean
@@ -138,6 +142,7 @@ export class ExplodableBox extends THREE.Mesh implements IClickable
     {
         this.exploded = !this.exploded;
         globalThis.app.scene.FocusOnObject(this);
+        this.clickPos = this.position;
     }
 
     private UpdateBuffers() : void
@@ -168,7 +173,8 @@ export class ExplodableBox extends THREE.Mesh implements IClickable
 
     private UpdatePosition() : void
     {
-
+        //let delta = this.focusPos.sub(this.clickPos).divideScalar(this.expandSteps);
+        //this.position.copy(this.focusPos);//clickPos.add(delta.multiplyScalar(this.explodeCounter)));
     }
 
     Update() : void
